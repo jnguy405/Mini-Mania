@@ -1,0 +1,33 @@
+{
+  "name": "cmpm-121-f",
+  "version": "1.0.0",
+  "description": "## Introducing the team",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^24.10.1",
+    "@types/three": "^0.181.0",
+    "cannon-es": "^0.20.0",
+    "dat.gui": "^0.7.9",
+    "stats.js": "^0.17.0",
+    "three": "^0.181.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4"
+  },
+  "devDependencies": {
+    "@types/dat.gui": "^0.7.13",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2"
+  }
+}
