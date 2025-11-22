@@ -55,4 +55,4 @@
 - By using Three.js and Cannon-es with TypeScript, it helps us understand how real-time 3D rendering, physics simulation, and game loops work at a lower level with type safety, instead of relying on Unity or Unreal.
 - Using TypeScript for our entire codebase will help us learn how to write more maintainable, self-documenting code with proper type definitions and interfaces.
 - Using Node.js, npm, and Vite with TypeScript helps us maintain a consistent development environment and encourages us to write simple, modular code with compile-time error checking.
-- Using Blender to create 3D models and importing them into our project teaches us how real game asset pipelines work and how to optimize 3D assets for web delivery.1
+- Using Blender to create 3D models and importing them into our project teaches us how real game asset pipelines work and how to optimize 3D assets for web delivery.

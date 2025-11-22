@@ -1,11 +1,10 @@
 import './style.css'
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Player } from './player';
+import { Player } from './player.ts';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { Inventory } from './inventory';
-import { SimonGame } from './SimonGame';
-import { PickupBlock } from './PickupBlock';
+import { Inventory } from './inventory.ts';
+import { SimonGame } from './SimonGame.ts';
 
 // --- 1. UI Setup ---
 const promptDiv = document.createElement('div');
@@ -43,8 +42,10 @@ const fogColor = new THREE.Color(0xd1c485);
 scene.background = fogColor;
 scene.fog = new THREE.Fog(fogColor, 7, 50); 
 
+// Camera setup (Near 0.2 to prevent clipping)
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.2, 1000);
 
+// Flashlight setup
 const flashLight = new THREE.SpotLight(0xffffff, 2.5, 40, Math.PI / 6, 0.5, 1);
 flashLight.position.set(0, 0, 0); 
 flashLight.target.position.set(0, 0, -1); 
@@ -95,20 +96,22 @@ world.addContactMaterial(defaultContactMaterial);
 // --- 5. Materials & Map Layout ---
 const commonMat = new THREE.MeshStandardMaterial({ color: monoColor, roughness: 0.8, side: THREE.DoubleSide });
 
+// Floor
 const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), commonMat);
 floorMesh.rotation.x = -Math.PI / 2;
 floorMesh.position.y = -0.01; 
 scene.add(floorMesh);
 const floorBody = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane(), material: defaultMaterial });
 floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-floorBody.position.y = 1; 
 world.addBody(floorBody);
 
+// Ceiling
 const ceilingMesh = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), commonMat);
 ceilingMesh.rotation.x = Math.PI / 2; 
 ceilingMesh.position.y = 10.0; 
 scene.add(ceilingMesh);
 
+// Lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); 
 scene.add(ambientLight);
 const fluorescentLights: THREE.PointLight[] = []; 
@@ -168,13 +171,7 @@ gltfLoader.load(import.meta.env.BASE_URL + 'back1.glb', (gltf) => {
 });
 
 
-// --- 7. Pickupable Blocks Setup ---
-const pickupBlocks: PickupBlock[] = [];
-const block1 = new PickupBlock(scene, world, new THREE.Vector3(2, 3, 2), defaultMaterial);
-pickupBlocks.push(block1);
-
-
-// --- 8. Trigger System ---
+// --- 7. Trigger System ---
 interface TriggerObj {
     position: THREE.Vector3;
     color: string;
@@ -197,12 +194,13 @@ function createTriggerBox(x: number, z: number, color: string) {
     triggers.push({ position: new THREE.Vector3(x, 1.5, z), color: color, active: true, mesh: mesh });
 }
 
+// Minigame locations
 createTriggerBox(-34.83, -30.99, 'red'); 
-createTriggerBox(27.80, -5.88, 'blue');   
+createTriggerBox(27.80, -5.88, 'blue');   
 createTriggerBox(-34.47, 34.98, 'green'); 
 
 
-// --- 9. Final Escape Box ---
+// --- 8. Final Escape Box ---
 const finalBoxGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
 const finalBoxMat = new THREE.MeshBasicMaterial({ 
     color: 0x0000ff, 
@@ -218,77 +216,16 @@ scene.add(finalTriggerMesh);
 let isFinalTriggerActive = false; 
 
 function checkWinCondition() {
-    // 1. Check if all 3 items are collected
-    const hasAllItems = inventory.hasItem('red') && inventory.hasItem('blue') && inventory.hasItem('green');
-    
-    // 2. Final Condition: All items + Button Pressed
-    if (hasAllItems && isButtonActivated && !isFinalTriggerActive) {
+    if (inventory.hasItem('red') && inventory.hasItem('blue') && inventory.hasItem('green')) {
         console.log("Escape route opened!");
         finalTriggerMesh.visible = true;
         isFinalTriggerActive = true;
-    } else if (isFinalTriggerActive && (!hasAllItems || !isButtonActivated)) {
-        finalTriggerMesh.visible = false;
-        isFinalTriggerActive = false;
-        console.log("Escape route closed!");
+        alert("All items collected! Return to the center to escape.");
     }
 }
 
 
-// --- 9.5 Floor Button (Puzzle) ---
-const buttonPos = new THREE.Vector3(-4.73, 1.05, -22.87);
-
-const buttonGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.1, 32);
-const buttonMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x330000 });
-const buttonMesh = new THREE.Mesh(buttonGeo, buttonMat);
-buttonMesh.position.copy(buttonPos);
-buttonMesh.receiveShadow = true;
-scene.add(buttonMesh);
-
-const buttonShape = new CANNON.Box(new CANNON.Vec3(0.6, 0.05, 0.6)); 
-const buttonBody = new CANNON.Body({
-    type: CANNON.Body.STATIC,
-    shape: buttonShape,
-    material: defaultMaterial
-});
-buttonBody.position.copy(buttonPos as unknown as CANNON.Vec3);
-world.addBody(buttonBody);
-
-const buttonLight = new THREE.PointLight(0x00ff00, 0, 3);
-buttonLight.position.set(buttonPos.x, 2.0, buttonPos.z); 
-scene.add(buttonLight);
-
-let isButtonActivated = false;
-
-function updateButtonState() {
-    let pressed = false;
-    pickupBlocks.forEach(block => {
-        const dist = new THREE.Vector2(block.mesh.position.x, block.mesh.position.z)
-            .distanceTo(new THREE.Vector2(buttonPos.x, buttonPos.z));
-            
-        if (dist < 0.8 && Math.abs(block.mesh.position.y - buttonPos.y) < 1.0) {
-            pressed = true;
-        }
-    });
-
-    if (pressed !== isButtonActivated) {
-        isButtonActivated = pressed;
-        if (pressed) {
-            console.log("🔘 Button Pressed!");
-            buttonMesh.material.color.setHex(0x00ff00);
-            buttonMesh.material.emissive.setHex(0x004400);
-            buttonLight.intensity = 1.5;
-        } else {
-            console.log("⚪ Button Released!");
-            buttonMesh.material.color.setHex(0xff0000);
-            buttonMesh.material.emissive.setHex(0x330000);
-            buttonLight.intensity = 0;
-        }
-        checkWinCondition();
-    }
-}
-
-
-// --- 10. Player & Events ---
+// --- 9. Player & Events ---
 const player = new Player(scene, world, camera);
 
 window.addEventListener('keydown', (event) => {
@@ -312,7 +249,7 @@ window.addEventListener('keydown', (event) => {
 });
 
 
-// --- 11. Game Loop ---
+// --- 10. Game Loop ---
 const clock = new THREE.Clock();
 
 function animate() {
@@ -321,6 +258,21 @@ function animate() {
 
     world.step(1 / 60, dt, 3);
     
+    // Light flicker effect
+    fluorescentLights.forEach(light => {
+        const flicker = Math.random() > 0.99 ? Math.random() * 0.2 + 0.8 : 1;
+        light.intensity = 0.8 * flicker;
+    });
+
+    // Rotate final box
+    if (isFinalTriggerActive) {
+        finalTriggerMesh.rotation.x += 0.01;
+        finalTriggerMesh.rotation.y += 0.02;
+        finalTriggerMesh.rotation.z += 0.01;
+    }
+
+    renderer.render(scene, camera);
+
     if (!isGameActive) {
         player.update();
 
@@ -332,7 +284,7 @@ function animate() {
             if (!trigger.active) return;
             
             const distSq = (pVec.x - trigger.position.x) ** 2 + (pVec.z - trigger.position.z) ** 2;
-            if (distSq < 9) {
+            if (distSq < 9) { // Within 3m
                 foundMiniGame = true;
                 currentNearbyTrigger = trigger;
                 
@@ -369,23 +321,6 @@ function animate() {
             promptDiv.style.color = "white"; 
         }
     }
-
-    pickupBlocks.forEach(block => block.update());
-
-    updateButtonState();
-
-    fluorescentLights.forEach(light => {
-        const flicker = Math.random() > 0.99 ? Math.random() * 0.2 + 0.8 : 1;
-        light.intensity = 0.8 * flicker;
-    });
-
-    if (isFinalTriggerActive) {
-        finalTriggerMesh.rotation.x += 0.01;
-        finalTriggerMesh.rotation.y += 0.02;
-        finalTriggerMesh.rotation.z += 0.01;
-    }
-
-    renderer.render(scene, camera);
 }
 
 animate();
@@ -394,11 +329,4 @@ window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-window.addEventListener('keydown', (event) => {
-    if (event.code === 'KeyP') {
-        const pos = player.body.position;
-        console.log(`📍 Position: x=${pos.x.toFixed(2)}, z=${pos.z.toFixed(2)}`);
-    }
 });
