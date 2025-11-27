@@ -13,3 +13,6 @@
 - **Jenalee**: Fixed some dependencies, fixed commit cleanliness, will refactor later.
 - **Joseph Gonzalez**: Added a new branch for github pages to have a proper deployment.
 - **William Gonzalez**: Helped with the trouble shooting and syntax errors for the deployment and making of the new branch.
+
+## 11/27/25
+- **Jenalee**: Refactor - Added brief comments to describe functions and file contents. Categorized functions in main.ts and player.ts for easier navigation.
