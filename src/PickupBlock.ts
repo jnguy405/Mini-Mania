@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
+// Interactive physics block that can be picked up and moved by players
 export class PickupBlock {
     mesh: THREE.Mesh;
     body: CANNON.Body;
@@ -13,7 +14,7 @@ export class PickupBlock {
     ) {
         const size = 1.0;
 
-        // 1. Visual Mesh (Three.js)
+        // Visual representation - orange box with realistic lighting
         const geo = new THREE.BoxGeometry(size, size, size);
         const mat = new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.7 });
         this.mesh = new THREE.Mesh(geo, mat);
@@ -21,30 +22,32 @@ export class PickupBlock {
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
 
-        // 2. Physics Body (Cannon.js)
-        // Reverting to Box for stable stacking on floor.
-        // Slightly reduced size (0.48) to prevent sticking/clipping with walls.
+        // Physics body - slightly smaller collision box to prevent wall sticking
+        // Uses box shape for stable stacking behavior on floors
         const shape = new CANNON.Box(new CANNON.Vec3(size / 2 * 0.95, size / 2 * 0.95, size / 2 * 0.95));
         this.body = new CANNON.Body({
-            mass: 5, 
+            mass: 5, // Heavy enough to feel substantial, light enough to move
             position: new CANNON.Vec3(position.x, position.y, position.z),
             shape: shape,
             material: material
         });
-        this.body.angularDamping = 0.5; // Normal damping for box behavior
+        this.body.angularDamping = 0.5; // Prevents excessive spinning
 
-        // 3. UserData linking (Crucial for Player.ts interaction)
+        // Enable player interaction - Player.ts checks this userData
         this.mesh.userData = {
             isPickupable: true,
             physicsBody: this.body
         };
 
-        // 4. Add to world
+        // Add to respective simulation worlds
         scene.add(this.mesh);
         world.addBody(this.body);
     }
 
-    // Update position/rotation from physics body to visual mesh
+    /**
+     * Synchronizes visual mesh with physics body state
+     * Called every frame to reflect physics simulation results
+     */
     update() {
         this.mesh.position.copy(this.body.position as unknown as THREE.Vector3);
         this.mesh.quaternion.copy(this.body.quaternion as unknown as THREE.Quaternion);

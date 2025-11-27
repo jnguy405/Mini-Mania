@@ -3,13 +3,16 @@ export class SimonGame {
     msgDisplay: HTMLDivElement;
     buttons: HTMLButtonElement[] = [];
     
+    // Game state
     sequence: number[] = [];
     playerStep: number = 0;
     isInputBlocked: boolean = false;
     
+    // Game configuration
     colors = ['red', 'blue', 'green'];
     targetColor: string = '';
     
+    // Callback functions
     onWin: (color: string) => void;
     onClose: () => void;
 
@@ -17,10 +20,10 @@ export class SimonGame {
         this.onWin = onWin;
         this.onClose = onClose;
         
-        // Create UI
         this.overlay = document.createElement('div');
         this.overlay.id = 'minigame-overlay';
         
+        // ========== UI CREATION ==========
         this.msgDisplay = document.createElement('div');
         this.msgDisplay.id = 'game-msg';
         this.overlay.appendChild(this.msgDisplay);
@@ -28,6 +31,7 @@ export class SimonGame {
         const btnContainer = document.createElement('div');
         btnContainer.className = 'simon-buttons';
         
+        // Create color buttons
         this.colors.forEach((color, index) => {
             const btn = document.createElement('button');
             btn.className = `simon-btn`;
@@ -38,6 +42,7 @@ export class SimonGame {
         });
         this.overlay.appendChild(btnContainer);
 
+        // Close button
         const closeBtn = document.createElement('button');
         closeBtn.id = 'close-btn';
         closeBtn.innerText = 'Give Up (Close)';
@@ -47,6 +52,7 @@ export class SimonGame {
         document.body.appendChild(this.overlay);
     }
 
+    // ========== GAME VISIBILITY CONTROL ==========
     show(rewardColor: string) {
         this.targetColor = rewardColor;
         this.overlay.style.display = 'flex';
@@ -56,9 +62,10 @@ export class SimonGame {
 
     hide() {
         this.overlay.style.display = 'none';
-        this.onClose(); // Re-enable 3D controls
+        this.onClose(); // Return control to main game
     }
 
+    // ========== GAME LOGIC ==========
     startGame() {
         this.sequence = [];
         this.playerStep = 0;
@@ -69,10 +76,10 @@ export class SimonGame {
         this.playerStep = 0;
         this.isInputBlocked = true;
         
-        // Generate random sequence length 3~5
+        // Generate sequence of 3 random colors
         const length = 3; 
         this.sequence = [];
-        for(let i=0; i<length; i++) {
+        for(let i = 0; i < length; i++) {
             this.sequence.push(Math.floor(Math.random() * 3));
         }
 
@@ -90,7 +97,7 @@ export class SimonGame {
             }
             this.flashButton(this.sequence[i]);
             i++;
-        }, 600); // Speed
+        }, 600); // Button flash timing
     }
 
     flashButton(index: number) {
@@ -99,24 +106,26 @@ export class SimonGame {
         setTimeout(() => btn.classList.remove('active'), 300);
     }
 
+    // ========== PLAYER INPUT HANDLING ==========
     handleInput(index: number) {
         if (this.isInputBlocked) return;
 
         this.flashButton(index);
 
+        // Check if input matches sequence
         if (index !== this.sequence[this.playerStep]) {
             this.msgDisplay.innerText = "Wrong! Try Again.";
             this.isInputBlocked = true;
-            setTimeout(() => this.startGame(), 500); // Quick restart on fail
+            setTimeout(() => this.startGame(), 500); // Restart on failure
             return;
         }
 
         this.playerStep++;
 
+        // Check for round completion
         if (this.playerStep >= this.sequence.length) {
-            // Instant win & close
-            this.onWin(this.targetColor);
-            this.hide();
+            this.onWin(this.targetColor); // Award item
+            this.hide(); // Close minigame
         }
     }
 }

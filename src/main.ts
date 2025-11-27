@@ -7,7 +7,7 @@ import { Inventory } from './inventory';
 import { SimonGame } from './SimonGame';
 import { PickupBlock } from './PickupBlock';
 
-// --- 1. UI Setup ---
+// ========== UI ELEMENTS ==========
 const promptDiv = document.createElement('div');
 promptDiv.id = 'interaction-prompt';
 promptDiv.innerText = "[E] Start Minigame";
@@ -33,8 +33,7 @@ clearScreen.innerHTML = `
 `;
 document.body.appendChild(clearScreen);
 
-
-// --- 2. Scene & Basic Setup ---
+// ========== SCENE SETUP ==========
 const scene = new THREE.Scene();
 const monoColor = new THREE.Color(0xd1c485); 
 const lightColor = new THREE.Color(0xffffee); 
@@ -45,6 +44,13 @@ scene.fog = new THREE.Fog(fogColor, 7, 50);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.2, 1000);
 
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0; 
+document.body.appendChild(renderer.domElement);
+
+// ========== LIGHTING SETUP ==========
 const flashLight = new THREE.SpotLight(0xffffff, 2.5, 40, Math.PI / 6, 0.5, 1);
 flashLight.position.set(0, 0, 0); 
 flashLight.target.position.set(0, 0, -1); 
@@ -52,65 +58,9 @@ camera.add(flashLight);
 camera.add(flashLight.target);
 scene.add(camera); 
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0; 
-
-document.body.appendChild(renderer.domElement);
-
-
-// --- 3. Game System ---
-const inventory = new Inventory();
-let isGameActive = false;
-let currentNearbyTrigger: TriggerObj | null = null;
-let isFinalTriggerNearby = false; 
-
-const simonGame = new SimonGame(
-    (rewardColor) => {
-        inventory.addItem(rewardColor);
-        console.log(`Item acquired: ${rewardColor}`);
-        if (currentNearbyTrigger) {
-            currentNearbyTrigger.active = false;
-            currentNearbyTrigger.mesh.visible = false; 
-        }
-        checkWinCondition();
-    },
-    () => {
-        isGameActive = false;
-        player.setControls(true);
-        promptDiv.style.display = 'none';
-    }
-);
-
-
-// --- 4. Physics World ---
-const world = new CANNON.World();
-world.gravity.set(0, -9.82, 0);
-const defaultMaterial = new CANNON.Material('default');
-const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial, defaultMaterial, { friction: 0.5, restitution: 0.0 });
-world.addContactMaterial(defaultContactMaterial);
-
-
-// --- 5. Materials & Map Layout ---
-const commonMat = new THREE.MeshStandardMaterial({ color: monoColor, roughness: 0.8, side: THREE.DoubleSide });
-
-const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), commonMat);
-floorMesh.rotation.x = -Math.PI / 2;
-floorMesh.position.y = -0.01; 
-scene.add(floorMesh);
-const floorBody = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane(), material: defaultMaterial });
-floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-floorBody.position.y = 1; 
-world.addBody(floorBody);
-
-const ceilingMesh = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), commonMat);
-ceilingMesh.rotation.x = Math.PI / 2; 
-ceilingMesh.position.y = 10.0; 
-scene.add(ceilingMesh);
-
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); 
 scene.add(ambientLight);
+
 const fluorescentLights: THREE.PointLight[] = []; 
 for (let x = -60; x <= 60; x += 30) { 
     for (let z = -60; z <= 60; z += 30) {
@@ -122,8 +72,56 @@ for (let x = -60; x <= 60; x += 30) {
     }
 }
 
+// ========== GAME SYSTEMS ==========
+const inventory = new Inventory();
+let isGameActive = false;
+let currentNearbyTrigger: TriggerObj | null = null;
+let isFinalTriggerNear = false; 
 
-// --- 6. GLB Loader ---
+const simonGame = new SimonGame(
+    (rewardColor) => {
+        inventory.addItem(rewardColor);
+        console.log(`Item acquired: ${rewardColor}`);
+        if (currentNearbyTrigger) {
+            currentNearbyTrigger.active = false;
+            currentNearbyTrigger.mesh.visible = false; 
+        }
+        checkWinCond();
+    },
+    () => {
+        isGameActive = false;
+        player.setControls(true);
+        promptDiv.style.display = 'none';
+    }
+);
+
+// ========== PHYSICS WORLD ==========
+const world = new CANNON.World();
+world.gravity.set(0, -9.82, 0);
+const defaultMaterial = new CANNON.Material('default');
+const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial, defaultMaterial, { friction: 0.5, restitution: 0.0 });
+world.addContactMaterial(defaultContactMaterial);
+
+// ========== ENVIRONMENT SETUP ==========
+const commonMat = new THREE.MeshStandardMaterial({ color: monoColor, roughness: 0.8, side: THREE.DoubleSide });
+
+// Floor
+const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), commonMat);
+floorMesh.rotation.x = -Math.PI / 2;
+floorMesh.position.y = -0.01; 
+scene.add(floorMesh);
+const floorBody = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane(), material: defaultMaterial });
+floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+floorBody.position.y = 1; 
+world.addBody(floorBody);
+
+// Ceiling
+const ceilingMesh = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), commonMat);
+ceilingMesh.rotation.x = Math.PI / 2; 
+ceilingMesh.position.y = 10.0; 
+scene.add(ceilingMesh);
+
+// ========== LEVEL GEOMETRY LOADING ==========
 function createTrimeshBody(mesh: THREE.Mesh): CANNON.Body | null {
     const geometry = mesh.geometry;
     const vertices = [];
@@ -167,14 +165,12 @@ gltfLoader.load(import.meta.env.BASE_URL + 'back1.glb', (gltf) => {
     });
 });
 
-
-// --- 7. Pickupable Blocks Setup ---
+// ========== INTERACTIVE OBJECTS ==========
 const pickupBlocks: PickupBlock[] = [];
 const block1 = new PickupBlock(scene, world, new THREE.Vector3(2, 3, 2), defaultMaterial);
 pickupBlocks.push(block1);
 
-
-// --- 8. Trigger System ---
+// Minigame triggers
 interface TriggerObj {
     position: THREE.Vector3;
     color: string;
@@ -201,8 +197,7 @@ createTriggerBox(-34.83, -30.99, 'red');
 createTriggerBox(27.80, -5.88, 'blue');   
 createTriggerBox(-34.47, 34.98, 'green'); 
 
-
-// --- 9. Final Escape Box ---
+// Final escape trigger
 const finalBoxGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
 const finalBoxMat = new THREE.MeshBasicMaterial({ 
     color: 0x0000ff, 
@@ -217,78 +212,75 @@ scene.add(finalTriggerMesh);
 
 let isFinalTriggerActive = false; 
 
-function checkWinCondition() {
-    // 1. Check if all 3 items are collected
+// Pressure plate puzzle
+const btnPos = new THREE.Vector3(-4.73, 1.05, -22.87);
+
+const btnGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.1, 32);
+const btnMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x330000 });
+const btnMesh = new THREE.Mesh(btnGeo, btnMat);
+btnMesh.position.copy(btnPos);
+btnMesh.receiveShadow = true;
+scene.add(btnMesh);
+
+const btnShape = new CANNON.Box(new CANNON.Vec3(0.6, 0.05, 0.6)); 
+const btnBody = new CANNON.Body({
+    type: CANNON.Body.STATIC,
+    shape: btnShape,
+    material: defaultMaterial
+});
+btnBody.position.copy(btnPos as unknown as CANNON.Vec3);
+world.addBody(btnBody);
+
+const btnLight = new THREE.PointLight(0x00ff00, 0, 3);
+btnLight.position.set(btnPos.x, 2.0, btnPos.z); 
+scene.add(btnLight);
+
+let isBtnActive = false;
+
+// ========== GAME LOGIC ==========
+function checkWinCond() {
     const hasAllItems = inventory.hasItem('red') && inventory.hasItem('blue') && inventory.hasItem('green');
     
-    // 2. Final Condition: All items + Button Pressed
-    if (hasAllItems && isButtonActivated && !isFinalTriggerActive) {
+    if (hasAllItems && isBtnActive && !isFinalTriggerActive) {
         console.log("Escape route opened!");
         finalTriggerMesh.visible = true;
         isFinalTriggerActive = true;
-    } else if (isFinalTriggerActive && (!hasAllItems || !isButtonActivated)) {
+    } else if (isFinalTriggerActive && (!hasAllItems || !isBtnActive)) {
         finalTriggerMesh.visible = false;
         isFinalTriggerActive = false;
         console.log("Escape route closed!");
     }
 }
 
-
-// --- 9.5 Floor Button (Puzzle) ---
-const buttonPos = new THREE.Vector3(-4.73, 1.05, -22.87);
-
-const buttonGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.1, 32);
-const buttonMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x330000 });
-const buttonMesh = new THREE.Mesh(buttonGeo, buttonMat);
-buttonMesh.position.copy(buttonPos);
-buttonMesh.receiveShadow = true;
-scene.add(buttonMesh);
-
-const buttonShape = new CANNON.Box(new CANNON.Vec3(0.6, 0.05, 0.6)); 
-const buttonBody = new CANNON.Body({
-    type: CANNON.Body.STATIC,
-    shape: buttonShape,
-    material: defaultMaterial
-});
-buttonBody.position.copy(buttonPos as unknown as CANNON.Vec3);
-world.addBody(buttonBody);
-
-const buttonLight = new THREE.PointLight(0x00ff00, 0, 3);
-buttonLight.position.set(buttonPos.x, 2.0, buttonPos.z); 
-scene.add(buttonLight);
-
-let isButtonActivated = false;
-
-function updateButtonState() {
+function updateBtnState() {
     let pressed = false;
     pickupBlocks.forEach(block => {
         const dist = new THREE.Vector2(block.mesh.position.x, block.mesh.position.z)
-            .distanceTo(new THREE.Vector2(buttonPos.x, buttonPos.z));
+            .distanceTo(new THREE.Vector2(btnPos.x, btnPos.z));
             
-        if (dist < 0.8 && Math.abs(block.mesh.position.y - buttonPos.y) < 1.0) {
+        if (dist < 0.8 && Math.abs(block.mesh.position.y - btnPos.y) < 1.0) {
             pressed = true;
         }
     });
 
-    if (pressed !== isButtonActivated) {
-        isButtonActivated = pressed;
+    if (pressed !== isBtnActive) {
+        isBtnActive = pressed;
         if (pressed) {
             console.log("🔘 Button Pressed!");
-            buttonMesh.material.color.setHex(0x00ff00);
-            buttonMesh.material.emissive.setHex(0x004400);
-            buttonLight.intensity = 1.5;
+            btnMesh.material.color.setHex(0x00ff00);
+            btnMesh.material.emissive.setHex(0x004400);
+            btnLight.intensity = 1.5;
         } else {
             console.log("⚪ Button Released!");
-            buttonMesh.material.color.setHex(0xff0000);
-            buttonMesh.material.emissive.setHex(0x330000);
-            buttonLight.intensity = 0;
+            btnMesh.material.color.setHex(0xff0000);
+            btnMesh.material.emissive.setHex(0x330000);
+            btnLight.intensity = 0;
         }
-        checkWinCondition();
+        checkWinCond();
     }
 }
 
-
-// --- 10. Player & Events ---
+// ========== PLAYER CONTROLS ==========
 const player = new Player(scene, world, camera);
 
 window.addEventListener('keydown', (event) => {
@@ -302,7 +294,7 @@ window.addEventListener('keydown', (event) => {
             promptDiv.style.display = 'none';
             simonGame.show(currentNearbyTrigger.color);
         }
-        else if (isFinalTriggerNearby && isFinalTriggerActive) {
+        else if (isFinalTriggerNear && isFinalTriggerActive) {
             player.setControls(false); 
             document.exitPointerLock(); 
             clearScreen.style.display = 'flex'; 
@@ -311,8 +303,7 @@ window.addEventListener('keydown', (event) => {
     }
 });
 
-
-// --- 11. Game Loop ---
+// ========== MAIN GAME LOOP ==========
 const clock = new THREE.Clock();
 
 function animate() {
@@ -350,11 +341,11 @@ function animate() {
             }
         });
 
-        isFinalTriggerNearby = false;
+        isFinalTriggerNear = false;
         if (isFinalTriggerActive) {
             const distToFinal = pVec.distanceTo(finalTriggerMesh.position);
             if (distToFinal < 3.0) { 
-                isFinalTriggerNearby = true;
+                isFinalTriggerNear = true;
                 if (!foundMiniGame) {
                     promptDiv.innerText = "[E] Escape";
                     promptDiv.style.color = "#44ff44"; 
@@ -363,7 +354,7 @@ function animate() {
             }
         }
 
-        if (!foundMiniGame && !isFinalTriggerNearby) {
+        if (!foundMiniGame && !isFinalTriggerNear) {
             currentNearbyTrigger = null;
             promptDiv.style.display = 'none';
             promptDiv.style.color = "white"; 
@@ -371,9 +362,9 @@ function animate() {
     }
 
     pickupBlocks.forEach(block => block.update());
+    updateBtnState();
 
-    updateButtonState();
-
+    // Lighting effects
     fluorescentLights.forEach(light => {
         const flicker = Math.random() > 0.99 ? Math.random() * 0.2 + 0.8 : 1;
         light.intensity = 0.8 * flicker;
@@ -390,6 +381,7 @@ function animate() {
 
 animate();
 
+// ========== WINDOW MANAGEMENT ==========
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();

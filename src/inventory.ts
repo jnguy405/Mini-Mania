@@ -1,15 +1,19 @@
-// src/Inventory.ts
+// Manages an inventory UI with slot-based item storage
 export class Inventory {
-    container: HTMLDivElement;
-    slots: HTMLElement[] = [];
+    private container: HTMLDivElement;
+    private slots: HTMLElement[] = [];
+    private static readonly SLOT_COUNT = 3;
 
     constructor() {
         this.container = document.createElement('div');
         this.container.id = 'inventory-bar';
         document.body.appendChild(this.container);
+        this.initializeSlots();
+    }
 
-        // Create 3 slots
-        for (let i = 0; i < 3; i++) {
+    // Creates the inventory slot elements
+    private initializeSlots(): void {
+        for (let i = 0; i < Inventory.SLOT_COUNT; i++) {
             const slot = document.createElement('div');
             slot.className = 'inv-slot';
             this.container.appendChild(slot);
@@ -17,24 +21,27 @@ export class Inventory {
         }
     }
 
-    addItem(color: string) {
-        // Find empty slot
-        const emptySlot = this.slots.find(slot => slot.childElementCount === 0);
+    /**
+     * Adds a colored item to the first available slot
+     * @returns true if item was added, false if inventory is full
+     */
+    addItem(color: string): boolean {
+        const emptySlot = this.slots.find(slot => slot.children.length === 0);
         
-        if (emptySlot) {
-            const item = document.createElement('div');
-            item.className = 'inv-item';
-            item.style.backgroundColor = color;
-            emptySlot.appendChild(item);
-            return true;
-        }
-        return false; // Inventory full
+        if (!emptySlot) return false;
+
+        const item = document.createElement('div');
+        item.className = 'inv-item';
+        item.style.backgroundColor = color;
+        emptySlot.appendChild(item);
+        return true;
     }
 
+    // Checks if inventory contains an item of the specified color
     hasItem(color: string): boolean {
         return this.slots.some(slot => {
             const item = slot.firstElementChild as HTMLElement;
-            return item && item.style.backgroundColor === color;
+            return item?.style.backgroundColor === color;
         });
     }
 }
