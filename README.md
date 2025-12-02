@@ -1,5 +1,7 @@
 # Dev Log 12/1/25
 
+(Game Link)[https://josephgonzalez1.github.io/cmpm-121-F/]
+
 ## How we satisfied the software requirements
 1. The game uses the same 3D rendering and physics simulation identified by the team for F1 or suitable replacements that still satisfy the F1 requirements.
     - The game has the same tech stack described in F1 with cannon and three. All F1 requirements remain satisfied.
