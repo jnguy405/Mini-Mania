@@ -17,11 +17,11 @@
     - The player may escape or fail depending on gameplay.
 
 ## Reflection
-    - Our team's plan has stayed somewhat the same as we chose to stay with the same tech stack with cannon and three.
-    - The plan only has differed in a way that offers refinement and expanding on certain mechanics.
-    - There is now an inventory system that remains consistent throughout the puzzle instead of just carrying an object.
-    - The failure condition for the puzzle has changed where the player can now fail by inputting the incorrect input pattern as it makes the successes or failures more clear cut.
-    - There is a more conclusive fail ending now as supposed to the fail ending prior where it's just the player stuck there for eternity until they solve it.
+- Our team's plan has stayed somewhat the same as we chose to stay with the same tech stack with cannon and three.
+- The plan only has differed in a way that offers refinement and expanding on certain mechanics.
+- There is now an inventory system that remains consistent throughout the puzzle instead of just carrying an object.
+- The failure condition for the puzzle has changed where the player can now fail by inputting the incorrect input pattern as it makes the successes or failures more clear cut.
+- There is a more conclusive fail ending now as supposed to the fail ending prior where it's just the player stuck there for eternity until they solve it.
 
 ## Introducing the team
 
