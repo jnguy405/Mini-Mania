@@ -1,10 +1,8 @@
 name: Deploy to GitHub Pages
 
 on:
-  # Trigger the workflow on push to main branch
   push:
     branches: ["main"]
-  # Allow manual trigger from Actions tab
   workflow_dispatch:
 
 permissions:
@@ -14,37 +12,51 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  # Build job
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-
+      
       - name: Install dependencies
         run: npm ci
-
-      - name: Run CI checks
+      
+      - name: Build application
         run: npm run build
-
+      
+      - name: Debug build output
+        run: |
+          echo "=== Build Output Structure ==="
+          ls -la dist/
+          echo "=== Checking index.html ==="
+          if [ -f "dist/index.html" ]; then
+            echo "✓ index.html exists"
+            # Check if base path is correct in index.html
+            grep -n "Mini-Mania" dist/index.html || echo "Base path not found in HTML"
+          else
+            echo "✗ index.html NOT FOUND!"
+            find . -name "index.html" -type f
+          fi
+          echo "=== Assets folder ==="
+          ls -la dist/assets/ 2>/dev/null || echo "No assets folder"
+      
       - name: Setup Pages
         uses: actions/configure-pages@v4
-
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
-  # Deployment job
   deploy:
     environment:
       name: github-pages
@@ -55,5 +67,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-
